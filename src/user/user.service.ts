@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,15 +10,27 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma.service';
-import { LoginUserDto } from './dto/login-user.dto';
+import {
+  EmailVerificationDto,
+  LoginUserDto,
+  VerifyEmailDto,
+} from './dto/login-user.dto';
 import { RequestWithUser } from './interface';
+import sendMail from 'src/utils/sendMail';
+import { htmlContent } from 'src/utils/emailTemplate';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
   constructor(
     private prism: PrismaService,
     private jwtService: JwtService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private configService: ConfigService,
   ) {}
+
   async create(createUserDto: CreateUserDto) {
     const isEmailExist = await this.prism.user.findFirst({
       where: { email: createUserDto.email },
@@ -40,20 +53,89 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('Credentials are wrong.');
     }
+
+    if (user.isDeleted) {
+      throw new NotFoundException('User does not exist with this email.');
+    }
+
+    if (!user.isVerified) {
+      throw new BadRequestException('Please verified your email first.');
+    }
+
     const isMatch = await argon2.verify(user.password, loginUserDto.password);
     if (!isMatch) {
       throw new NotFoundException('Credentials are wrong.');
     }
-    debugger;
+
     const payload: RequestWithUser['user'] = { sub: user.id, role: user.role };
     const access_token = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_SECRET,
+      secret: this.configService.get<string>('JWT_SECRET'),
       expiresIn: '1d',
     });
 
     return {
       access_token: access_token,
     };
+  }
+
+  async verifyEmail(verifyEmailDto: VerifyEmailDto) {
+    const user = await this.prism.user.findFirst({
+      where: { email: verifyEmailDto.email },
+    });
+
+    if (user.isVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const storedOtp = await this.cacheManager.get<string>(verifyEmailDto.email);
+
+    if (verifyEmailDto.otp !== storedOtp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    const promises = [
+      this.cacheManager.del(verifyEmailDto.email),
+      this.prism.user.update({
+        where: { id: user.id },
+        data: { isVerified: true },
+      }),
+    ];
+
+    await Promise.all(promises);
+
+    return { success: true, message: 'Email verified successfully.' };
+  }
+
+  async getEmailVerificationOtp(emailVerificationDto: EmailVerificationDto) {
+    const user = await this.prism.user.findFirst({
+      where: { email: emailVerificationDto.email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const otp = `${Math.floor(100000 + Math.random() * 900000)}`;
+
+    await this.cacheManager.set(
+      emailVerificationDto.email,
+      otp,
+      1000 * 60 * 10,
+    );
+
+    const msgwait = await sendMail(
+      emailVerificationDto.email,
+      'Email Verification',
+      htmlContent.replace('{{OTP_VALUE}}', otp),
+    );
+
+    if (msgwait.accepted) {
+      return { success: true, message: 'Otp sent successfully.' };
+    }
   }
 
   async me(req: RequestWithUser) {
@@ -80,7 +162,7 @@ export class UserService {
 
   async findOne(id: string) {
     const user = await this.prism.user.findUnique({
-      where: { id },
+      where: { id, isDeleted: false },
       select: {
         id: true,
         firstName: true,
@@ -104,7 +186,12 @@ export class UserService {
     return updateUserDto;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    await this.prism.user.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
+
+    return { success: true, message: 'User deleted successfully.' };
   }
 }

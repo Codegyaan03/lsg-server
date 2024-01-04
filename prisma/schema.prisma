@@ -19,6 +19,7 @@ model User {
   password   String
   role       Role     @default(AUTHOR)
   isVerified Boolean  @default(false)
+  isDeleted  Boolean  @default(false)
   address    Address? @relation(fields: [addressId], references: [id])
   addressId  String?  @unique
   createdAt  DateTime @default(now())

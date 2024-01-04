@@ -3,12 +3,17 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      envFilePath: '.env.local',
+    CacheModule.register({
       isGlobal: true,
+      store: 'memory',
+    }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env.local',
     }),
     UserModule,
   ],

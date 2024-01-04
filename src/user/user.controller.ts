@@ -13,7 +13,11 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { LoginUserDto } from './dto/login-user.dto';
+import {
+  EmailVerificationDto,
+  LoginUserDto,
+  VerifyEmailDto,
+} from './dto/login-user.dto';
 import { AuthGuard } from 'src/Decorators/guards/auth.guard';
 import { RequestWithUser } from './interface';
 
@@ -32,6 +36,16 @@ export class UserController {
     return this.userService.login(loginUserDto);
   }
 
+  @Post('/verify-email')
+  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.userService.verifyEmail(verifyEmailDto);
+  }
+
+  @Post('/get-email-verification-otp')
+  getEmailVerificationOtp(@Body() emailVerificationDto: EmailVerificationDto) {
+    return this.userService.getEmailVerificationOtp(emailVerificationDto);
+  }
+
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Get('/me')
@@ -44,13 +58,17 @@ export class UserController {
     return this.userService.findOne(id);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(+id, updateUserDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+    return this.userService.remove(id);
   }
 }

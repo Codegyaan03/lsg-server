@@ -11,3 +11,21 @@ export class LoginUserDto {
   @IsNotEmpty()
   password: string;
 }
+
+export class VerifyEmailDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class EmailVerificationDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+}
