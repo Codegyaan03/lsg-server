@@ -11,19 +11,20 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
+  id         String      @id @default(uuid())
   firstName  String
   lastName   String
-  email      String   @unique
+  email      String      @unique
   phone      String
   password   String
-  role       Role     @default(AUTHOR)
-  isVerified Boolean  @default(false)
-  isDeleted  Boolean  @default(false)
-  address    Address? @relation(fields: [addressId], references: [id])
-  addressId  String?  @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  role       Role        @default(AUTHOR)
+  isVerified Boolean     @default(false)
+  isDeleted  Boolean     @default(false)
+  address    Address?    @relation(fields: [addressId], references: [id])
+  addressId  String?     @unique
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  Editorial  Editorial[]
 
   @@index([email, role])
 }
@@ -38,6 +39,42 @@ model Address {
   User      User?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Editorial {
+  id          String    @id @default(uuid())
+  title       String
+  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+  content     String
+  user        User?     @relation(fields: [userId], references: [id])
+  userId      String?
+  isPublished Boolean   @default(false)
+  source      Source    @relation(fields: [sourceId], references: [id])
+  sourceId    String    @unique
+  isDeleted   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Source {
+  id        String     @id @default(uuid())
+  title     String
+  link      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Editorial Editorial?
+
+  @@index([link])
+}
+
+model Category {
+  id        String      @id @default(uuid())
+  name      String
+  Editorial Editorial[]
+  isDeleted Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 enum Role {

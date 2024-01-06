@@ -16,11 +16,11 @@ import {
   VerifyEmailDto,
 } from './dto/login-user.dto';
 import { RequestWithUser } from './interface';
-import sendMail from 'src/utils/sendMail';
-import { htmlContent } from 'src/utils/emailTemplate';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
+import sendMail from 'src/utils/sendMail';
+import { htmlContent } from 'src/utils/emailTemplate';
 
 @Injectable()
 export class UserService {
@@ -67,7 +67,7 @@ export class UserService {
       throw new NotFoundException('Credentials are wrong.');
     }
 
-    const payload: RequestWithUser['user'] = { sub: user.id, role: user.role };
+    const payload = { sub: user.id, role: user.role };
     const access_token = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
       expiresIn: '1d',

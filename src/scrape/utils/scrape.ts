@@ -1,8 +1,7 @@
 import puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
 import { generateText } from './bot';
-import logger from './logger';
-import { PrismaService } from 'src/prisma.service';
+import logger from 'src/utils/logger';
 // import { faker } from "@faker-js/faker";
 
 const loadData = async (link: string) => {
@@ -58,13 +57,10 @@ export const getEditorialByDate = async (link: string | undefined) => {
   return list;
 };
 
-const getHinduEditorialContent = async (
-  link: string,
-  prisma: PrismaService,
-) => {
+const getHinduEditorialContent = async (link: string) => {
   const $ = await loadData(link);
 
-  logger.info('get editorial content.');
+  logger.info('Update content.');
   const [title, content] = await Promise.all([
     generateText($('.editorial .title').text().trim(), 'title'),
     generateText(
@@ -72,26 +68,10 @@ const getHinduEditorialContent = async (
       'content',
     ),
   ]);
-
-  logger.info('save editorial.');
-  await prisma.editorial.create({
-    data: {
-      title,
-      content,
-      source: {
-        create: {
-          link,
-          title: 'the hindu',
-        },
-      },
-    },
-  });
-
-  logger.info('saved editorial content.');
   return { title, link, content, source: 'the hindu' };
 };
 
-export const getListOfHinduEditorials = async (prisma: PrismaService) => {
+export const getListOfHinduEditorials = async () => {
   logger.info('Fetching hindu editorial list');
   const $ = await loadData('https://www.thehindu.com/opinion/editorial/');
 
@@ -101,14 +81,7 @@ export const getListOfHinduEditorials = async (prisma: PrismaService) => {
     .toArray()
     .map((el) => $(el).attr('href'));
 
-  const promise = links.map(async (link) => {
-    const isFetchedLink = await prisma.source.findFirst({
-      where: { link },
-    });
-    if (isFetchedLink) return [];
-    return getHinduEditorialContent(link, prisma);
-  });
+  const promise = links.map((link) => getHinduEditorialContent(link));
   const editorials = await Promise.all(promise);
-  logger.info('done');
   return editorials.flat();
 };
