@@ -17,7 +17,8 @@ export async function generateText(data: string, type: 'title' | 'content') {
   if (type === 'title') {
     msg = `create a title for the following context- ${data}`;
   } else {
-    msg = `please write an essay on given article with proper outlines. Article - ${data}`;
+    // msg = `please write an essay on given article with proper outlines. Article - ${data}`;
+    msg = `I want you to act as an essay writer. I will provide you with an article and you will write it from there. Article - ${data}`;
   }
 
   const result = await chat.sendMessage(msg);

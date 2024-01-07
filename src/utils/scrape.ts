@@ -5,6 +5,12 @@ import logger from './logger';
 import { PrismaService } from 'src/prisma.service';
 // import { faker } from "@faker-js/faker";
 
+const sourceObj = {
+  thehindu: 'the hindu',
+  indianexpress: 'the indian express',
+  thehindubusinessline: 'the hindu business line',
+};
+
 const loadData = async (link: string) => {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
@@ -19,52 +25,115 @@ const loadData = async (link: string) => {
   return $;
 };
 
-export const getListOfEditorials = async () => {
-  const browser = await puppeteer.launch({ headless: 'new' });
-  const page = await browser.newPage();
-  const url =
-    'https://www.drishtiias.com/current-affairs-news-analysis-editorials';
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  const html = await page.content();
+export const getDrishtiIasEditorialsList = async (prisma: PrismaService) => {
+  logger.info('Load editorial page.');
+  const $ = await loadData(
+    'https://www.drishtiias.com/current-affairs-news-analysis-editorials',
+  );
 
-  const $ = cheerio.load(html);
+  logger.info('Fetching all editorial links.');
 
   const dailyNewsLinks = $(
-    'article .row .column:first .box-slide .box-hide ul li a',
+    'article .row .column:last-child .box-slide .box-hide ul li a',
   )
     .toArray()
     .map((el) => $(el).attr('href'));
 
-  browser.close();
-  return dailyNewsLinks;
+  logger.info('Fetching editorial content by links.');
+  const PQueue = await import('p-queue').then((m) => m.default);
+  const queue = new PQueue({ concurrency: 5 });
+
+  const editorial = await Promise.all(
+    dailyNewsLinks.reverse().map(async (link) => {
+      return queue.add(() => getDrishtiIasContent(link, prisma));
+    }),
+  );
+
+  if (editorial.flat().length === 0) {
+    return [];
+  }
+
+  logger.info('Saving all editorial.');
+
+  await prisma.$transaction(async (tx) => {
+    await tx.source.createMany({
+      data: editorial.flat().map((item) => ({
+        title: item.sourceName,
+        link: item.link,
+      })),
+    });
+
+    const editorialData = await Promise.all(
+      editorial.flat().map(async (item) => ({
+        title: item.title,
+        content: item.content,
+        sourceId: (await tx.source.findFirst({ where: { link: item.link } }))
+          .id,
+      })),
+    );
+
+    await tx.editorial.createMany({
+      data: editorialData,
+    });
+    logger.info('successfully saved editorial.');
+  });
+
+  return editorial.flat();
 };
 
-export const getEditorialByDate = async (link: string | undefined) => {
-  if (!link) return [];
-  const browser = await puppeteer.launch({ headless: 'new' });
-  const page = await browser.newPage();
-  // await page.setUserAgent(faker.internet.userAgent());
-
-  await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 0 });
-  const html = await page.content();
-
-  const $ = cheerio.load(html);
-
-  const list = $('article .article-detail h2 a')
-    .toArray()
-    .map((el) => $(el).attr('href'));
-
-  browser.close();
-  return list;
-};
-
-const getHinduEditorialContent = async (
-  link: string,
+const getDrishtiIasContent = async (
+  link: string | undefined,
   prisma: PrismaService,
 ) => {
+  logger.info(`Fetching content from ${link}`);
   const $ = await loadData(link);
 
-  logger.info('get editorial content.');
+  const sourceLink = $('.article-detail .border p a').attr('href');
+
+  if (!sourceLink) {
+    return [];
+  }
+
+  const isFetchedLink = await prisma.source.findUnique({
+    where: { link: sourceLink },
+  });
+
+  if (isFetchedLink) return [];
+
+  logger.info('Customize editorial content.');
+
+  const [title, content] = await Promise.all([
+    generateText($('.article-detail h2').text().trim(), 'title'),
+    generateText(
+      $('.article-detail')
+        .children(
+          ':not(script, #disqus_thread, .border-bg, noscript, #disqus_recommendations, .next-post, .actions, .tags-new, .border, h2)',
+        )
+        .text()
+        .trim(),
+      'content',
+    ),
+  ]);
+  logger.info(`Successfully fetched editorial content. from ${link}`);
+
+  return {
+    title,
+    content,
+    link: sourceLink,
+    sourceName:
+      sourceObj[
+        sourceLink.match(/https:\/\/(?:www\.)?([a-zA-Z0-9-]+)\.com/)?.[1]
+      ],
+  };
+};
+
+const getHinduEditorialContent = async (link: string) => {
+  logger.info(`Fetching editorial content. from ${link}`);
+
+  const $ = await loadData(link);
+
+  logger.info('Customize editorial content.');
+
   const [title, content] = await Promise.all([
     generateText($('.editorial .title').text().trim(), 'title'),
     generateText(
@@ -72,30 +141,13 @@ const getHinduEditorialContent = async (
       'content',
     ),
   ]);
-
-  logger.info('save editorial.');
-  await prisma.editorial.create({
-    data: {
-      title,
-      content,
-      source: {
-        create: {
-          link,
-          title: 'the hindu',
-        },
-      },
-    },
-  });
-
-  logger.info('saved editorial content.');
+  logger.info(`Successfully fetched editorial content. from ${link}`);
   return { title, link, content, source: 'the hindu' };
 };
 
 export const getListOfHinduEditorials = async (prisma: PrismaService) => {
   logger.info('Fetching hindu editorial list');
   const $ = await loadData('https://www.thehindu.com/opinion/editorial/');
-
-  logger.info('Fetching hindu editorial content');
 
   const links = $('.editorial-section .element.wide-row-element .title a')
     .toArray()
@@ -106,9 +158,35 @@ export const getListOfHinduEditorials = async (prisma: PrismaService) => {
       where: { link },
     });
     if (isFetchedLink) return [];
-    return getHinduEditorialContent(link, prisma);
+    return getHinduEditorialContent(link);
   });
   const editorials = await Promise.all(promise);
-  logger.info('done');
+
+  if (editorials.flat().length === 0) {
+    return [];
+  }
+
+  logger.info('saving hindu editorial list');
+  await prisma.$transaction(async (tx) => {
+    await tx.source.createMany({
+      data: editorials
+        .flat()
+        .map((item) => ({ title: item.source, link: item.link })),
+    });
+
+    const editorialData = await Promise.all(
+      editorials.flat().map(async (item) => ({
+        title: item.title,
+        content: item.content,
+        sourceId: (await tx.source.findFirst({ where: { link: item.link } }))
+          .id,
+      })),
+    );
+
+    await tx.editorial.createMany({
+      data: editorialData,
+    });
+  });
+  logger.info('Successfully fetched and saved hindu editorial list');
   return editorials.flat();
 };

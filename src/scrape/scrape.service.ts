@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CreateScrapeDto, ScrapeOption } from './dto/index.dto';
-import { getListOfHinduEditorials } from 'src/utils/scrape';
+import {
+  getListOfHinduEditorials,
+  getDrishtiIasEditorialsList,
+} from 'src/utils/scrape';
 import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
@@ -27,6 +30,23 @@ export class ScrapeService {
           data: latestHinduEditorialList,
         };
       }
+
+      case ScrapeOption.DRISHTI_IAS: {
+        const list = await getDrishtiIasEditorialsList(this.prisma);
+
+        if (list.length === 0) {
+          return {
+            success: true,
+            message: 'Already fetched Drishti IAS editorial.',
+          };
+        }
+        return {
+          success: true,
+          message: 'Successfully fetched Drishti IAS editorial.',
+          data: list,
+        };
+      }
+
       default: {
         return 'empty case';
       }
