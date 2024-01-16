@@ -21,6 +21,7 @@ import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import sendMail from 'src/utils/sendMail';
 import { htmlContent } from 'src/utils/emailTemplate';
+import { responseResult } from 'src/utils/response-result';
 
 @Injectable()
 export class UserService {
@@ -40,9 +41,10 @@ export class UserService {
     }
     const hash = await argon2.hash(createUserDto.password);
     delete createUserDto.confirm_password;
-    return await this.prism.user.create({
+    const user = await this.prism.user.create({
       data: { ...createUserDto, password: hash },
     });
+    return responseResult(user, true, 'User created successfully.');
   }
 
   async login(loginUserDto: LoginUserDto) {
@@ -73,9 +75,13 @@ export class UserService {
       expiresIn: '1d',
     });
 
-    return {
-      access_token: access_token,
-    };
+    return responseResult(
+      {
+        access_token,
+      },
+      true,
+      'User logged in successfully.',
+    );
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
@@ -107,7 +113,7 @@ export class UserService {
 
     await Promise.all(promises);
 
-    return { success: true, message: 'Email verified successfully.' };
+    return responseResult(null, true, 'Email verified successfully.');
   }
 
   async getEmailVerificationOtp(emailVerificationDto: EmailVerificationDto) {
@@ -134,7 +140,7 @@ export class UserService {
     );
 
     if (msgwait.accepted) {
-      return { success: true, message: 'Otp sent successfully.' };
+      return responseResult(null, true, 'Otp sent successfully.');
     }
   }
 
@@ -150,6 +156,7 @@ export class UserService {
         createdAt: true,
         updatedAt: true,
         role: true,
+        profilePic: true,
       },
     });
 
@@ -157,7 +164,7 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    return { user, success: true, message: 'User found successfully.' };
+    return responseResult(user, true, 'User found successfully.');
   }
 
   async findOne(id: string) {
@@ -179,7 +186,7 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    return { user, success: true, message: 'User found successfully.' };
+    return responseResult(user, true, 'User found successfully.');
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
@@ -192,6 +199,6 @@ export class UserService {
       data: { isDeleted: true },
     });
 
-    return { success: true, message: 'User deleted successfully.' };
+    return responseResult(null, true, 'User deleted successfully.');
   }
 }

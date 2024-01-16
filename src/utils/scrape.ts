@@ -60,6 +60,7 @@ export const getDrishtiIasEditorialsList = async (prisma: PrismaService) => {
       data: editorial.flat().map((item) => ({
         title: item.sourceName,
         link: item.link,
+        originalSource: item.originalSource,
       })),
     });
 
@@ -67,7 +68,7 @@ export const getDrishtiIasEditorialsList = async (prisma: PrismaService) => {
       editorial.flat().map(async (item) => ({
         title: item.title,
         content: item.content,
-        sourceId: (await tx.source.findFirst({ where: { link: item.link } }))
+        sourceId: (await tx.source.findUnique({ where: { link: item.link } }))
           .id,
       })),
     );
@@ -85,6 +86,12 @@ const getDrishtiIasContent = async (
   link: string | undefined,
   prisma: PrismaService,
 ) => {
+  const isFetchedLink = await prisma.source.findUnique({
+    where: { originalSource: link },
+  });
+
+  if (isFetchedLink) return [];
+
   logger.info(`Fetching content from ${link}`);
   const $ = await loadData(link);
 
@@ -93,12 +100,6 @@ const getDrishtiIasContent = async (
   if (!sourceLink) {
     return [];
   }
-
-  const isFetchedLink = await prisma.source.findUnique({
-    where: { link: sourceLink },
-  });
-
-  if (isFetchedLink) return [];
 
   logger.info('Customize editorial content.');
 
@@ -120,6 +121,7 @@ const getDrishtiIasContent = async (
     title,
     content,
     link: sourceLink,
+    originalSource: link,
     sourceName:
       sourceObj[
         sourceLink.match(/https:\/\/(?:www\.)?([a-zA-Z0-9-]+)\.com/)?.[1]
@@ -169,9 +171,11 @@ export const getListOfHinduEditorials = async (prisma: PrismaService) => {
   logger.info('saving hindu editorial list');
   await prisma.$transaction(async (tx) => {
     await tx.source.createMany({
-      data: editorials
-        .flat()
-        .map((item) => ({ title: item.source, link: item.link })),
+      data: editorials.flat().map((item) => ({
+        title: item.source,
+        link: item.link,
+        originalSource: item.link,
+      })),
     });
 
     const editorialData = await Promise.all(

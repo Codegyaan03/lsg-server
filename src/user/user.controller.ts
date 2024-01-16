@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  HttpCode,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -32,16 +33,19 @@ export class UserController {
   }
 
   @Post('/login')
+  @HttpCode(200)
   login(@Body() loginUserDto: LoginUserDto) {
     return this.userService.login(loginUserDto);
   }
 
   @Post('/verify-email')
+  @HttpCode(200)
   verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
     return this.userService.verifyEmail(verifyEmailDto);
   }
 
   @Post('/get-email-verification-otp')
+  @HttpCode(200)
   getEmailVerificationOtp(@Body() emailVerificationDto: EmailVerificationDto) {
     return this.userService.getEmailVerificationOtp(emailVerificationDto);
   }
