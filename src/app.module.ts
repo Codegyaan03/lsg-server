@@ -14,7 +14,6 @@ import { ScrapeModule } from './scrape/scrape.module';
     }),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env.local',
     }),
     UserModule,
     ScrapeModule,
