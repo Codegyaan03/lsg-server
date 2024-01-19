@@ -1,8 +1,8 @@
 import {
+  BadRequestException,
   CanActivate,
   ExecutionContext,
   Injectable,
-  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -30,7 +30,7 @@ export class AuthGuard implements CanActivate {
 
       request['user'] = payload;
     } catch (e) {
-      throw new InternalServerErrorException(e);
+      throw new BadRequestException(e);
     }
     return true;
   }
