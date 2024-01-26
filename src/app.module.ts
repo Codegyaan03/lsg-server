@@ -5,6 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScrapeModule } from './scrape/scrape.module';
+import { CustomWinstonLogger } from './custom-winston-logger/custom-winston-logger';
+import { SocketGateway } from './socket/socket.gateway';
 
 @Module({
   imports: [
@@ -19,6 +21,6 @@ import { ScrapeModule } from './scrape/scrape.module';
     ScrapeModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SocketGateway, CustomWinstonLogger],
 })
 export class AppModule {}

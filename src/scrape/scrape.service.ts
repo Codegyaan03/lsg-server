@@ -1,23 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { CreateScrapeDto, ScrapeOption } from './dto/index.dto';
-import {
-  getListOfHinduEditorials,
-  getDrishtiIasEditorialsList,
-} from 'src/utils/scrape';
 import { PrismaService } from 'src/prisma.service';
+import { ScrapeFunctions } from 'src/scrape/scrape.functions';
 
 @Injectable()
 export class ScrapeService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private scrapeFunctions: ScrapeFunctions,
+  ) {}
 
   async scrapeData(scrapeData: CreateScrapeDto) {
     const option: ScrapeOption | undefined = scrapeData.option;
-
     switch (option) {
       case ScrapeOption.THE_HINDU: {
-        const latestHinduEditorialList = await getListOfHinduEditorials(
-          this.prisma,
-        );
+        const latestHinduEditorialList =
+          await this.scrapeFunctions.getListOfHinduEditorials();
 
         if (latestHinduEditorialList.length === 0) {
           return {
@@ -32,7 +30,7 @@ export class ScrapeService {
       }
 
       case ScrapeOption.DRISHTI_IAS: {
-        const list = await getDrishtiIasEditorialsList(this.prisma);
+        const list = await this.scrapeFunctions.getDrishtiIasEditorialsList();
 
         if (list.length === 0) {
           return {
