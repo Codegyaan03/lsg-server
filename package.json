@@ -20,7 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migrate:dev": "npx prisma migrate dev",
     "migrate:production": "npx prisma migrate deploy",
-    "deploy": "yarn migrate:production && npx prisma generate && yarn build"
+    "deploy": "yarn migrate:production && npx prisma generate && npx puppeteer browsers install chrome && yarn build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",
