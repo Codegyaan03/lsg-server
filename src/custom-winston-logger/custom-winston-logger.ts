@@ -12,7 +12,7 @@ class SocketTransport extends Transport {
   }
 
   log(info: any) {
-    this.socketGateway.emitMessage('log', info);
+    this.socketGateway.emitMessage('log', { ...info, date: new Date() });
   }
 }
 
@@ -27,7 +27,10 @@ export class CustomWinstonLogger {
       defaultMeta: { service: ' lsg-service' },
       transports: [
         new winston.transports.Console(),
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({
+          filename: 'error.log',
+          level: 'combined',
+        }),
         new SocketTransport({ level: 'info' }, this.socketGateway),
       ],
     });

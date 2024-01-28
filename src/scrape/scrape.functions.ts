@@ -33,7 +33,7 @@ export class ScrapeFunctions {
   };
 
   getDrishtiIasEditorialsList = async () => {
-    this.loggerInstance.getLogger().info('Load editorial page.');
+    this.loggerInstance.getLogger().info('Load Drishti editorial page.');
     const $ = await this.loadData(
       'https://www.drishtiias.com/current-affairs-news-analysis-editorials',
     );
@@ -59,10 +59,13 @@ export class ScrapeFunctions {
     );
 
     if (editorial.flat().length === 0) {
+      this.loggerInstance
+        .getLogger()
+        .info('Already fetched Drishti IAS editorials.');
       return [];
     }
 
-    this.loggerInstance.getLogger().info('Saving all editorial.');
+    this.loggerInstance.getLogger().info('Saving all editorials.');
 
     await this.prisma.$transaction(async (tx) => {
       await tx.source.createMany({
@@ -85,7 +88,7 @@ export class ScrapeFunctions {
       await tx.editorial.createMany({
         data: editorialData,
       });
-      this.loggerInstance.getLogger().info('successfully saved editorial.');
+      this.loggerInstance.getLogger().info('Successfully saved editorial.');
     });
 
     return editorial.flat();
@@ -123,7 +126,7 @@ export class ScrapeFunctions {
     ]);
     this.loggerInstance
       .getLogger()
-      .info(`Successfully fetched editorial content. from ${link}`);
+      .info(`Successfully fetched editorial content from ${link}`);
 
     return {
       title,
@@ -140,7 +143,7 @@ export class ScrapeFunctions {
   getHinduEditorialContent = async (link: string) => {
     this.loggerInstance
       .getLogger()
-      .info(`Fetching editorial content. from ${link}`);
+      .info(`Fetching editorial content from ${link}`);
 
     const $ = await this.loadData(link);
 
@@ -155,12 +158,12 @@ export class ScrapeFunctions {
     ]);
     this.loggerInstance
       .getLogger()
-      .info(`Successfully fetched editorial content. from ${link}`);
+      .info(`Successfully fetched editorial content from ${link}`);
     return { title, link, content, source: 'the hindu' };
   };
 
   getListOfHinduEditorials = async () => {
-    this.loggerInstance.getLogger().info('Fetching hindu editorial list');
+    this.loggerInstance.getLogger().info('Fetching hindu editorials list');
     const $ = await this.loadData(
       'https://www.thehindu.com/opinion/editorial/',
     );
@@ -179,10 +182,12 @@ export class ScrapeFunctions {
     const editorials = await Promise.all(promise);
 
     if (editorials.flat().length === 0) {
+      this.loggerInstance.getLogger().info('Already fetched hindu editorials');
+
       return [];
     }
 
-    this.loggerInstance.getLogger().info('saving hindu editorial list');
+    this.loggerInstance.getLogger().info('Saving hindu editorial list');
     await this.prisma.$transaction(async (tx) => {
       await tx.source.createMany({
         data: editorials.flat().map((item) => ({
