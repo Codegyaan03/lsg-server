@@ -23,7 +23,7 @@ export class ScrapeFunctions {
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       ignoreDefaultArgs: ['--disable-extensions'],
-      protocolTimeout: 200000,
+      protocolTimeout: 300000,
     });
     const page = await browser.newPage();
 
