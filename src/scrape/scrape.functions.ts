@@ -28,6 +28,8 @@ export class ScrapeFunctions {
     const page = await browser.newPage();
 
     const url = link;
+    console.log(url);
+
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 300000 });
     const html = await page.content();
 
