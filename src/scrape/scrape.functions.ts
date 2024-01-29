@@ -19,7 +19,11 @@ export class ScrapeFunctions {
   ) {}
 
   loadData = async (link: string) => {
-    const browser = await puppeteer.launch({ headless: 'new' });
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      ignoreDefaultArgs: ['--disable-extensions'],
+    });
     const page = await browser.newPage();
 
     const url = link;
