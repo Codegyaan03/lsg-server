@@ -25,12 +25,13 @@ export class ScrapeFunctions {
       ignoreDefaultArgs: ['--disable-extensions'],
       protocolTimeout: 300000,
     });
+
     const page = await browser.newPage();
 
     const url = link;
     console.log(url);
 
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 300000 });
+    await page.goto(url);
     const html = await page.content();
 
     const $ = cheerio.load(html);
