@@ -26,6 +26,7 @@ model User {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   Editorial  Editorial[]
+  Logs       Logs[]
 
   @@index([email, role])
 }
@@ -77,6 +78,17 @@ model Category {
   isDeleted Boolean     @default(false)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+}
+
+model Logs {
+  id        String   @id @default(uuid())
+  message   String
+  level     String
+  service   String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
 }
 
 enum Role {

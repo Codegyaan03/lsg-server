@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateScrapeDto, ScrapeOption } from './dto/index.dto';
 import { PrismaService } from 'src/prisma.service';
 import { ScrapeFunctions } from 'src/scrape/scrape.functions';
@@ -11,43 +11,47 @@ export class ScrapeService {
   ) {}
 
   async scrapeData(scrapeData: CreateScrapeDto) {
-    const option: ScrapeOption | undefined = scrapeData.option;
-    switch (option) {
-      case ScrapeOption.THE_HINDU: {
-        const latestHinduEditorialList =
-          await this.scrapeFunctions.getListOfHinduEditorials();
+    try {
+      const option: ScrapeOption | undefined = scrapeData.option;
+      switch (option) {
+        case ScrapeOption.THE_HINDU: {
+          const latestHinduEditorialList =
+            await this.scrapeFunctions.getListOfHinduEditorials();
 
-        if (latestHinduEditorialList.length === 0) {
+          if (latestHinduEditorialList.length === 0) {
+            return {
+              success: true,
+              message: 'Already fetched hindu editorial.',
+            };
+          }
           return {
             success: true,
-            message: 'Already fetched hindu editorial.',
+            data: latestHinduEditorialList,
           };
         }
-        return {
-          success: true,
-          data: latestHinduEditorialList,
-        };
-      }
 
-      case ScrapeOption.DRISHTI_IAS: {
-        const list = await this.scrapeFunctions.getDrishtiIasEditorialsList();
+        case ScrapeOption.DRISHTI_IAS: {
+          const list = await this.scrapeFunctions.getDrishtiIasEditorialsList();
 
-        if (list.length === 0) {
+          if (list.length === 0) {
+            return {
+              success: true,
+              message: 'Already fetched Drishti IAS editorial.',
+            };
+          }
           return {
             success: true,
-            message: 'Already fetched Drishti IAS editorial.',
+            message: 'Successfully fetched Drishti IAS editorial.',
+            data: list,
           };
         }
-        return {
-          success: true,
-          message: 'Successfully fetched Drishti IAS editorial.',
-          data: list,
-        };
-      }
 
-      default: {
-        return 'empty case';
+        default: {
+          return 'empty case';
+        }
       }
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
   }
 

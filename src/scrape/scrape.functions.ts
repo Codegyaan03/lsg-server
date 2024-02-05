@@ -191,7 +191,6 @@ export class ScrapeFunctions {
 
     if (editorials.flat().length === 0) {
       this.loggerInstance.getLogger().info('Already fetched hindu editorials');
-
       return [];
     }
 
