@@ -36,8 +36,6 @@ export class CustomWinstonLogger {
   ) {}
 
   getLogger() {
-    console.log(this.request);
-
     return winston.createLogger({
       level: 'info',
       format: winston.format.json(),
