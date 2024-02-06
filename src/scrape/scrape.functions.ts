@@ -55,7 +55,7 @@ export class ScrapeFunctions {
       .getLogger()
       .info('Fetching editorial content by links.');
     const PQueue = await import('p-queue').then((m) => m.default);
-    const queue = new PQueue({ concurrency: 5 });
+    const queue = new PQueue({ concurrency: 3 });
 
     const editorial = await Promise.all(
       dailyNewsLinks.reverse().map(async (link) => {
