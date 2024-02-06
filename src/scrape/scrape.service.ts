@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateScrapeDto, ScrapeOption } from './dto/index.dto';
 import { PrismaService } from 'src/prisma.service';
 import { ScrapeFunctions } from 'src/scrape/scrape.functions';
+import { responseResult } from 'src/utils/response-result';
 
 @Injectable()
 export class ScrapeService {
@@ -82,11 +83,7 @@ export class ScrapeService {
       };
     }
 
-    return {
-      success: true,
-      data: editorial,
-      message: 'Editorial fetched successfully',
-    };
+    return responseResult(editorial, true, 'Editorial found successfully');
   }
 
   findOne(id: number) {
