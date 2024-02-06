@@ -28,7 +28,7 @@ export class ScrapeFunctions {
 
     const url = link;
 
-    await page.goto(url);
+    await page.goto(url, { timeout: 0 });
     const html = await page.content();
 
     const $ = cheerio.load(html);
