@@ -73,6 +73,11 @@ export class ScrapeService {
         },
         createdAt: true,
         updatedAt: true,
+        thumbnail: true,
+        viewersCount: true,
+      },
+      orderBy: {
+        categoryId: 'asc',
       },
     });
 
