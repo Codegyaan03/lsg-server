@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer';
 import * as cheerio from 'cheerio';
 import { generateText } from '../utils/bot';
 import { PrismaService } from 'src/prisma.service';
@@ -18,13 +18,17 @@ export class ScrapeFunctions {
     private prisma: PrismaService,
   ) {}
 
-  loadData = async (link: string) => {
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox'],
-    });
+  private browserInstance: Browser | null = null;
 
-    const page = await browser.newPage();
+  loadData = async (link: string) => {
+    if (!this.browserInstance) {
+      this.browserInstance = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox'],
+      });
+    }
+
+    const page = await this.browserInstance.newPage();
 
     const url = link;
 
@@ -33,7 +37,6 @@ export class ScrapeFunctions {
 
     const $ = cheerio.load(html);
 
-    browser.close();
     return $;
   };
 
@@ -95,7 +98,7 @@ export class ScrapeFunctions {
       });
       this.loggerInstance.getLogger().info('Successfully saved editorial.');
     });
-
+    this.browserInstance.close();
     return editorial.flat();
   };
 
@@ -117,32 +120,42 @@ export class ScrapeFunctions {
 
     this.loggerInstance.getLogger().info('Customize editorial content.');
 
-    const [title, content] = await Promise.all([
-      generateText($('.article-detail h2').text().trim(), 'title'),
-      generateText(
-        $('.article-detail')
-          .children(
-            ':not(script, #disqus_thread, .border-bg, noscript, #disqus_recommendations, .next-post, .actions, .tags-new, .border, h2)',
-          )
-          .text()
-          .trim(),
-        'content',
-      ),
-    ]);
-    this.loggerInstance
-      .getLogger()
-      .info(`Successfully fetched editorial content from ${link}`);
+    try {
+      const [title, content] = await Promise.all([
+        generateText($('.article-detail h2').text().trim(), 'title'),
+        generateText(
+          $('.article-detail')
+            .children(
+              ':not(script, #disqus_thread, .border-bg, noscript, #disqus_recommendations, .next-post, .actions, .tags-new, .border, h2)',
+            )
+            .text()
+            .trim(),
+          'content',
+        ),
+      ]);
+      this.loggerInstance
+        .getLogger()
+        .info(`Successfully fetched editorial content from ${link}`);
 
-    return {
-      title,
-      content,
-      link: sourceLink,
-      originalSource: link,
-      sourceName:
-        sourceObj[
-          sourceLink.match(/https:\/\/(?:www\.)?([a-zA-Z0-9-]+)\.com/)?.[1]
-        ],
-    };
+      return {
+        title,
+        content,
+        link: sourceLink,
+        originalSource: link,
+        sourceName:
+          sourceObj[
+            sourceLink.match(/https:\/\/(?:www\.)?([a-zA-Z0-9-]+)\.com/)?.[1]
+          ],
+      };
+    } catch (error) {
+      this.loggerInstance
+        .getLogger()
+        .error(`Failed to fetched editorial content from ${link}`);
+
+      this.loggerInstance.getLogger().error(error.message);
+
+      return [];
+    }
   };
 
   getHinduEditorialContent = async (link: string) => {
@@ -154,17 +167,25 @@ export class ScrapeFunctions {
 
     this.loggerInstance.getLogger().info('Customize editorial content.');
 
-    const [title, content] = await Promise.all([
-      generateText($('.editorial .title').text().trim(), 'title'),
-      generateText(
-        $('.editorial .articlebodycontent > p').text().trim(),
-        'content',
-      ),
-    ]);
-    this.loggerInstance
-      .getLogger()
-      .info(`Successfully fetched editorial content from ${link}`);
-    return { title, link, content, source: 'the hindu' };
+    try {
+      const [title, content] = await Promise.all([
+        generateText($('.editorial .title').text().trim(), 'title'),
+        generateText(
+          $('.editorial .articlebodycontent > p').text().trim(),
+          'content',
+        ),
+      ]);
+      this.loggerInstance
+        .getLogger()
+        .info(`Successfully fetched editorial content from ${link}`);
+      return { title, link, content, source: 'the hindu' };
+    } catch (error) {
+      this.loggerInstance
+        .getLogger()
+        .error(`Failed to fetched editorial content from ${link}`);
+      this.loggerInstance.getLogger().error(error.message);
+      return [];
+    }
   };
 
   getListOfHinduEditorials = async () => {
@@ -217,6 +238,7 @@ export class ScrapeFunctions {
     this.loggerInstance
       .getLogger()
       .info('Successfully fetched and saved hindu editorial list');
+    this.browserInstance.close();
     return editorials.flat();
   };
 }

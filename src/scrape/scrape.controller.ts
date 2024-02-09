@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Res,
 } from '@nestjs/common';
 import { ScrapeService } from './scrape.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -14,6 +15,8 @@ import { CreateScrapeDto } from './dto/index.dto';
 import { AuthGuard } from 'src/Decorators/guards/auth.guard';
 import { Roles, RolesGuard } from 'src/Decorators/guards/roles.guard';
 import { Role } from 'src/types';
+import { Response } from 'express';
+import { responseResult } from 'src/utils/response-result';
 
 @ApiTags('Editorial')
 @Controller('editorial')
@@ -23,7 +26,8 @@ export class ScrapeController {
   @Roles([Role.ADMIN])
   @UseGuards(AuthGuard, RolesGuard)
   @Post('scrape')
-  scrapeData(@Body() scrapeData: CreateScrapeDto) {
+  scrapeData(@Body() scrapeData: CreateScrapeDto, @Res() res: Response) {
+    res.json(responseResult(null, true, 'Scraping started.'));
     return this.scrapeService.scrapeData(scrapeData);
   }
 

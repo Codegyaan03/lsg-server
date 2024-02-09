@@ -77,7 +77,7 @@ export class ScrapeService {
         viewersCount: true,
       },
       orderBy: {
-        categoryId: 'asc',
+        createdAt: 'desc',
       },
     });
 

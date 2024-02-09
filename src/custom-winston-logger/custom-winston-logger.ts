@@ -46,7 +46,7 @@ export class CustomWinstonLogger {
           filename: 'error.log',
           level: 'combined',
         }),
-        new SocketTransport({ level: 'info' }, this.socketGateway, this.prisma),
+        new SocketTransport({}, this.socketGateway, this.prisma),
       ],
     });
   }
