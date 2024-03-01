@@ -125,6 +125,5 @@ export async function generateText(data: string, type: 'title' | 'content') {
 
   const result = await chat.sendMessage(msg);
   const response = result.response;
-  const text = response.text();
-  return text.replaceAll('\n', '<br/>');
+  return response.text();
 }

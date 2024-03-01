@@ -91,8 +91,31 @@ export class ScrapeService {
     return responseResult(editorial, true, 'Editorial found successfully');
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} scrape`;
+  async findOne(id: string) {
+    try {
+      const editorial = await this.prisma.editorial.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          source: {
+            select: {
+              id: true,
+              title: true,
+              link: true,
+            },
+          },
+          createdAt: true,
+          updatedAt: true,
+          thumbnail: true,
+          viewersCount: true,
+        },
+      });
+      return responseResult(editorial, true, 'Editorial found successfully');
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
   update(id: number) {

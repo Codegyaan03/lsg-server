@@ -6,9 +6,10 @@ import { Injectable } from '@nestjs/common';
 import { CustomWinstonLogger } from 'src/custom-winston-logger/custom-winston-logger';
 
 const sourceObj = {
-  thehindu: 'the hindu',
-  indianexpress: 'the indian express',
-  thehindubusinessline: 'the hindu business line',
+  'thehindu.com': 'the hindu',
+  'indianexpress.com': 'the indian express',
+  'thehindubusinessline.com': 'the hindu business line',
+  'timesofindia.indiatimes.com': 'the times of india',
 };
 
 @Injectable()
@@ -137,6 +138,11 @@ export class ScrapeFunctions {
         .getLogger()
         .info(`Successfully fetched editorial content from ${link}`);
 
+      console.log(
+        sourceLink.match(
+          /https:\/\/(?:www\.)?([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)\//,
+        ),
+      );
       return {
         title,
         content,
@@ -144,7 +150,9 @@ export class ScrapeFunctions {
         originalSource: link,
         sourceName:
           sourceObj[
-            sourceLink.match(/https:\/\/(?:www\.)?([a-zA-Z0-9-]+)\.com/)?.[1]
+            sourceLink.match(
+              /https:\/\/(?:www\.)?([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)\//,
+            )?.[1]
           ],
       };
     } catch (error) {

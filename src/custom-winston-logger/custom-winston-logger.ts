@@ -41,11 +41,7 @@ export class CustomWinstonLogger {
       format: winston.format.json(),
       defaultMeta: { service: ' lsg-service' },
       transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({
-          filename: 'error.log',
-          level: 'combined',
-        }),
+        // new winston.transports.Console(),
         new SocketTransport({}, this.socketGateway, this.prisma),
       ],
     });
