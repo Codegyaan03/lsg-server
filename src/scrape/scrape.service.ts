@@ -56,10 +56,10 @@ export class ScrapeService {
     }
   }
 
-  async findAll() {
+  async findAll(page: number = 1, limit: number = 10, search: string) {
     // find editorial with pagination
     const editorial = await this.prisma.editorial.findMany({
-      take: 10,
+      take: limit,
       select: {
         id: true,
         title: true,
@@ -79,16 +79,37 @@ export class ScrapeService {
       orderBy: {
         createdAt: 'desc',
       },
+      skip: (page - 1) * limit,
+      where: {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { id: { contains: search, mode: 'insensitive' } },
+        ],
+      },
+    });
+
+    const total = await this.prisma.editorial.count({
+      where: {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { id: { contains: search, mode: 'insensitive' } },
+        ],
+      },
     });
 
     if (editorial.length === 0) {
-      return {
-        success: true,
-        message: 'No editorial found',
-      };
+      return responseResult(
+        { editorial, total },
+        true,
+        'Editorial not available',
+      );
     }
 
-    return responseResult(editorial, true, 'Editorial found successfully');
+    return responseResult(
+      { editorial, total },
+      true,
+      'Editorial found successfully',
+    );
   }
 
   async findOne(id: string) {

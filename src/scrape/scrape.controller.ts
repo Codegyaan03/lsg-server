@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
+  ParseIntPipe,
+  HttpStatus,
 } from '@nestjs/common';
 import { ScrapeService } from './scrape.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -30,8 +33,21 @@ export class ScrapeController {
   @Roles([Role.ADMIN, Role.AUTHOR])
   @UseGuards(AuthGuard, RolesGuard)
   @Get('all')
-  findAll() {
-    return this.scrapeService.findAll();
+  findAll(
+    @Query(
+      'page',
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE }),
+    )
+    page: number,
+    @Query(
+      'limit',
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE }),
+    )
+    limit: number,
+    @Query('search')
+    search: string,
+  ) {
+    return this.scrapeService.findAll(page, limit, search);
   }
 
   @Get(':id')
